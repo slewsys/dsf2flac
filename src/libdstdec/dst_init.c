@@ -4,8 +4,8 @@ Lossless coding of 1-bit oversampled audio - DST (Direct Stream Transfer)
 
 This software was originally developed by:
 
-* Aad Rijnberg 
-  Philips Digital Systems Laboratories Eindhoven 
+* Aad Rijnberg
+  Philips Digital Systems Laboratories Eindhoven
   <aad.rijnberg@philips.com>
 
 * Fons Bruekers
@@ -78,16 +78,16 @@ Changes:
 
 /* General function for allocating memory for array of any type. Also, checks */
 /* for ARM architecture and uses the malloc method, otherwise uses _mm_malloc*/
-static void *MemoryAllocate(int NrOfElements, int SizeOfElement) 
+static void *MemoryAllocate(int NrOfElements, int SizeOfElement)
 {
   void *Array;
-  #ifdef __arm__      /* Check for ARM architecture */
-  if ((Array = malloc(NrOfElements * SizeOfElement)) == NULL) 
+  #if defined(__arm__) || defined(__arm64__)      /* Check for ARM architecture */
+  if ((Array = malloc(NrOfElements * SizeOfElement)) == NULL)
   {
     fprintf(stderr,"ERROR: not enough memory available!\n\n");
   }
   #else
-  if ((Array = _mm_malloc(NrOfElements * SizeOfElement, 16)) == NULL) 
+  if ((Array = _mm_malloc(NrOfElements * SizeOfElement, 16)) == NULL)
   {
     fprintf(stderr,"ERROR: not enough memory available!\n\n");
   }
@@ -95,17 +95,17 @@ static void *MemoryAllocate(int NrOfElements, int SizeOfElement)
   return Array;
 }
 
-static void MemoryFree(void *Array) 
+static void MemoryFree(void *Array)
 {
-  #ifdef __arm__      /* Check for ARM architecture */
+  #if defined(__arm__) || defined(__arm64__)      /* Check for ARM architecture */
   free(Array);
-  #else 
+  #else
   _mm_free(Array);
   #endif
 }
 
 /* General function for allocating memory for array of any type */
-static void *AllocateArray(int Dim, int ElementSize, ...) 
+static void *AllocateArray(int Dim, int ElementSize, ...)
 {
   void     ***A;   /* stores a pointer to the start of the allocated block for */
                    /* each dimension  */
@@ -126,7 +126,7 @@ static void *AllocateArray(int Dim, int ElementSize, ...)
   va_end(ap);
   A = MemoryAllocate(Dim, sizeof(**A));
   /* Allocate for each dimension a contiguous block of memory. */
-  for (n = 1, i = 0; i < Dim - 1; i++) 
+  for (n = 1, i = 0; i < Dim - 1; i++)
   {
     n *= Size[i];
     A[i] = MemoryAllocate(n, sizeof(void*));
@@ -134,7 +134,7 @@ static void *AllocateArray(int Dim, int ElementSize, ...)
   n *= Size[i];
   A[i] = MemoryAllocate(n, ElementSize);
   /* Set pointers for each dimension to the correct entries of its lower dim.*/
-  for (n = 1, i = 0; i < Dim - 1; i++) 
+  for (n = 1, i = 0; i < Dim - 1; i++)
   {
     n *= Size[i];
     for (j = 0; j < n; j++)
@@ -187,12 +187,12 @@ static signed char **AllocateSChar2D(int Rows, int Cols)
 
 /* Function for allocating memory for a 2D unsigned char array */
 /*
-static unsigned char **AllocateUChar2D (int Rows, int Cols) 
+static unsigned char **AllocateUChar2D (int Rows, int Cols)
 {
   unsigned char  **Array;
   int            r;
 
-  if ((Array = MemoryAllocate(Rows, sizeof(*Array))) == NULL) 
+  if ((Array = MemoryAllocate(Rows, sizeof(*Array))) == NULL)
   {
     fprintf(stderr,"ERROR: not enough memory available!\n\n");
   }
@@ -200,7 +200,7 @@ static unsigned char **AllocateUChar2D (int Rows, int Cols)
   {
     fprintf(stderr,"ERROR: not enough memory available!\n\n");
   }
-  for (r = 1; r < Rows; r++) 
+  for (r = 1; r < Rows; r++)
   {
     Array[r] = Array[r - 1] + Cols;
   }
@@ -209,7 +209,7 @@ static unsigned char **AllocateUChar2D (int Rows, int Cols)
 */
 
 /* Release memory for all dynamic variables of the decoder.*/
-static void FreeDecMemory (ebunch * D) 
+static void FreeDecMemory (ebunch * D)
 {
   MemoryFree(D->FrameHdr.ICoefA[0]);
   MemoryFree(D->FrameHdr.ICoefA);
@@ -287,7 +287,7 @@ static void AllocateDecMemory (ebunch * D)
 /*                                                                         */
 /***************************************************************************/
 
-int DST_InitDecoder(ebunch * D, int NrOfChannels, int SampleRate) 
+int DST_InitDecoder(ebunch * D, int NrOfChannels, int SampleRate)
 {
   int  retval = 0;
 
@@ -297,7 +297,7 @@ int DST_InitDecoder(ebunch * D, int NrOfChannels, int SampleRate)
   /*  64FS =>  4704 */
   /* 128FS =>  9408 */
   /* 256FS => 18816 */
-  D->FrameHdr.MaxFrameLen    = (588 * SampleRate / 8); 
+  D->FrameHdr.MaxFrameLen    = (588 * SampleRate / 8);
   D->FrameHdr.ByteStreamLen  = D->FrameHdr.MaxFrameLen   * D->FrameHdr.NrOfChannels;
   D->FrameHdr.BitStreamLen   = D->FrameHdr.ByteStreamLen * RESOL;
   D->FrameHdr.NrOfBitsPerCh  = D->FrameHdr.MaxFrameLen   * RESOL;
@@ -308,16 +308,16 @@ int DST_InitDecoder(ebunch * D, int NrOfChannels, int SampleRate)
   D->StrFilter.TableType = FILTER;
   D->StrPtable.TableType = PTABLE;
 
-  if (retval==0) 
+  if (retval==0)
   {
     AllocateDecMemory(D);
   }
 
-  if (retval==0) 
+  if (retval==0)
   {
     retval = CCP_CalcInit(&D->StrFilter);
   }
-  if (retval==0) 
+  if (retval==0)
   {
     retval = CCP_CalcInit(&D->StrPtable);
   }
@@ -363,4 +363,3 @@ int DST_CloseDecoder(ebunch * D)
 
   return(retval);
 }
-

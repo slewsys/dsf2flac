@@ -95,7 +95,9 @@ void checkTimer(dsf2flac_float64 currPos, dsf2flac_float64 percent)
  */
 boost::filesystem::path muti_track_name_helper(boost::filesystem::path outpath, int n) {
 	std::ostringstream prefix;
-	prefix << "track ";
+	// prefix << "track ";
+	if (n < 9)
+		prefix << 0;
 	prefix << n+1;
 	prefix << " - ";
 	boost::filesystem::path trackOutPath = outpath.parent_path() / (prefix.str() + outpath.filename().string());
